@@ -4,7 +4,7 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 
 - **RBAC** — `RoleMember` PDA ต่อ (role, wallet) · Admin หลาย wallet ได้
 - **Game Registry** — `GameEntry` ต่อ game program (`Active` / `Suspended`)
-- **PlatformConfig** — fee 5% (ปรับได้, เพดาน 20% บังคับใน code) · moderator pubkey
+- **PlatformConfig** — fee 1% (boost 1%, ad 1% ปรับได้, เพดาน 20% บังคับใน code)
 - **Treasury PDA** — รับ platform fee · ถอนเป็นรายได้ (Admin)
 - **Boost mint allowlist** · **โฆษณาพื้นฐาน** · **SDK / IDL กลาง**
 
