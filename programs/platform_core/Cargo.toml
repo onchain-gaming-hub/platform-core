@@ -14,7 +14,7 @@ default = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
@@ -22,6 +22,8 @@ custom-panic = []
 
 [dependencies]
 anchor-lang = "1.2.1"
+# Treasury ATA (associated_token) + withdraw/extension checks for SPL Token and Token-2022 (Q4).
+anchor-spl = "1.2.1"
 
 [dev-dependencies]
 # LiteSVM 0.17 = agave 4.3 runtime — matches cargo-build-sbf 4.3.0 (SBPF v3).

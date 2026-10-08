@@ -311,3 +311,405 @@ pub fn init_default(env: &mut Env) -> Keypair {
     assert_ok(&send(&mut env.svm, &[ix], &[&ua]));
     admin
 }
+
+// ================================================================ Phase 2
+
+use {
+    anchor_lang::solana_program::{instruction::AccountMeta, system_instruction},
+    anchor_spl::{
+        associated_token::{
+            get_associated_token_address_with_program_id,
+            spl_associated_token_account::instruction::create_associated_token_account,
+        },
+        token_2022::spl_token_2022::{
+            self,
+            extension::{
+                default_account_state::instruction::initialize_default_account_state,
+                metadata_pointer, transfer_fee::instruction::initialize_transfer_fee_config,
+                transfer_hook, ExtensionType,
+            },
+            instruction as t22_ix,
+            state::{Account as TokenAccountState, AccountState, Mint as MintState},
+        },
+    },
+    platform_core::state::GameStatus,
+};
+
+pub const TOKEN_PROGRAM: Pubkey = anchor_spl::token::ID;
+pub const TOKEN_2022_PROGRAM: Pubkey = anchor_spl::token_2022::ID;
+pub const ATA_PROGRAM: Pubkey = anchor_spl::associated_token::ID;
+/// Executable, but loaded by the non-upgradeable BPF loader → not a valid game program.
+pub const MEMO_PROGRAM: Pubkey =
+    anchor_lang::pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+
+/// Mint extensions a test mint can be created with.
+#[derive(Clone, Copy, Debug)]
+pub enum TestExt {
+    PermanentDelegate,
+    TransferFeeConfig,
+    TransferHook,
+    NonTransferable,
+    DefaultFrozen,
+    DefaultInitialized,
+    MetadataPointer,
+    /// Close authority set → mint can be closed and re-created (rejected).
+    MintCloseAuthority,
+    /// Extension present but no authority → mint can never be closed (allowed).
+    MintCloseAuthorityNone,
+}
+
+impl TestExt {
+    fn extension_type(self) -> ExtensionType {
+        match self {
+            TestExt::PermanentDelegate => ExtensionType::PermanentDelegate,
+            TestExt::TransferFeeConfig => ExtensionType::TransferFeeConfig,
+            TestExt::TransferHook => ExtensionType::TransferHook,
+            TestExt::NonTransferable => ExtensionType::NonTransferable,
+            TestExt::DefaultFrozen | TestExt::DefaultInitialized => {
+                ExtensionType::DefaultAccountState
+            }
+            TestExt::MetadataPointer => ExtensionType::MetadataPointer,
+            TestExt::MintCloseAuthority | TestExt::MintCloseAuthorityNone => {
+                ExtensionType::MintCloseAuthority
+            }
+        }
+    }
+
+    fn init_ix(self, mint: &Pubkey, authority: &Pubkey) -> Instruction {
+        let p = &TOKEN_2022_PROGRAM;
+        match self {
+            TestExt::PermanentDelegate => {
+                t22_ix::initialize_permanent_delegate(p, mint, authority).unwrap()
+            }
+            TestExt::TransferFeeConfig => {
+                initialize_transfer_fee_config(p, mint, Some(authority), Some(authority), 0, 0)
+                    .unwrap()
+            }
+            TestExt::TransferHook => {
+                transfer_hook::instruction::initialize(p, mint, Some(*authority), None).unwrap()
+            }
+            TestExt::NonTransferable => t22_ix::initialize_non_transferable_mint(p, mint).unwrap(),
+            TestExt::DefaultFrozen => {
+                initialize_default_account_state(p, mint, &AccountState::Frozen).unwrap()
+            }
+            TestExt::DefaultInitialized => {
+                initialize_default_account_state(p, mint, &AccountState::Initialized).unwrap()
+            }
+            TestExt::MetadataPointer => {
+                metadata_pointer::instruction::initialize(p, mint, Some(*authority), None).unwrap()
+            }
+            TestExt::MintCloseAuthority => {
+                t22_ix::initialize_mint_close_authority(p, mint, Some(authority)).unwrap()
+            }
+            TestExt::MintCloseAuthorityNone => {
+                t22_ix::initialize_mint_close_authority(p, mint, None).unwrap()
+            }
+        }
+    }
+}
+
+/// Creates a mint owned by `token_program` with `exts` (Token-2022 only) and
+/// `authority` as mint + freeze authority. Returns the mint address.
+pub fn create_mint(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    token_program: &Pubkey,
+    decimals: u8,
+    exts: &[TestExt],
+) -> Pubkey {
+    let mint = Keypair::new();
+    let types: Vec<ExtensionType> = exts.iter().map(|e| e.extension_type()).collect();
+    let space = ExtensionType::try_calculate_account_len::<MintState>(&types).unwrap();
+    let rent = svm.minimum_balance_for_rent_exemption(space);
+    let mut ixs = vec![system_instruction::create_account(
+        &payer.pubkey(),
+        &mint.pubkey(),
+        rent,
+        space as u64,
+        token_program,
+    )];
+    for e in exts {
+        ixs.push(e.init_ix(&mint.pubkey(), &payer.pubkey()));
+    }
+    ixs.push(
+        t22_ix::initialize_mint2(
+            token_program,
+            &mint.pubkey(),
+            &payer.pubkey(),
+            Some(&payer.pubkey()),
+            decimals,
+        )
+        .unwrap(),
+    );
+    assert_ok(&send(svm, &ixs, &[payer, &mint]));
+    mint.pubkey()
+}
+
+pub fn ata(owner: &Pubkey, mint: &Pubkey, token_program: &Pubkey) -> Pubkey {
+    get_associated_token_address_with_program_id(owner, mint, token_program)
+}
+
+pub fn create_ata(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    owner: &Pubkey,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+) -> Pubkey {
+    let ix = create_associated_token_account(&payer.pubkey(), owner, mint, token_program);
+    assert_ok(&send(svm, &[ix], &[payer]));
+    ata(owner, mint, token_program)
+}
+
+/// `mint_authority` mints `amount` straight into `destination` (a token account).
+pub fn mint_to(
+    svm: &mut LiteSVM,
+    mint_authority: &Keypair,
+    mint: &Pubkey,
+    destination: &Pubkey,
+    token_program: &Pubkey,
+    amount: u64,
+    decimals: u8,
+) {
+    let ix = t22_ix::mint_to_checked(
+        token_program,
+        mint,
+        destination,
+        &mint_authority.pubkey(),
+        &[],
+        amount,
+        decimals,
+    )
+    .unwrap();
+    assert_ok(&send(svm, &[ix], &[mint_authority]));
+}
+
+pub fn token_balance(svm: &LiteSVM, token_account: &Pubkey) -> u64 {
+    let acc = svm.get_account(token_account).expect("token account");
+    // Base `Account` layout (165 B) is identical for Token and Token-2022.
+    use anchor_lang::solana_program::program_pack::Pack;
+    TokenAccountState::unpack_from_slice(&acc.data[..TokenAccountState::LEN])
+        .unwrap()
+        .amount
+}
+
+pub fn token_account_owner(svm: &LiteSVM, token_account: &Pubkey) -> Pubkey {
+    let acc = svm.get_account(token_account).expect("token account");
+    use anchor_lang::solana_program::program_pack::Pack;
+    TokenAccountState::unpack_from_slice(&acc.data[..TokenAccountState::LEN])
+        .unwrap()
+        .owner
+}
+
+pub fn game_pda(game_program: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[GAME_SEED, game_program.as_ref()], &platform_core::id()).0
+}
+
+pub fn allowed_mint_pda(mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[BOOST_MINT_SEED, mint.as_ref()], &platform_core::id()).0
+}
+
+/// Flip `is_signer` off for `key` in `ix` (simulates a missing co-signature).
+pub fn unsign(ix: &mut Instruction, key: &Pubkey) {
+    for m in ix.accounts.iter_mut() {
+        if m.pubkey == *key {
+            m.is_signer = false;
+        }
+    }
+}
+
+pub fn ix_register_game(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    owner: &Pubkey,
+    game_program: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::RegisterGame { auth_role_kind }.data(),
+        platform_core::accounts::RegisterGame {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            owner: *owner,
+            game_program: *game_program,
+            game_entry: game_pda(game_program),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_set_game_status(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    game_program: &Pubkey,
+    status: GameStatus,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::SetGameStatus {
+            auth_role_kind,
+            status,
+        }
+        .data(),
+        platform_core::accounts::SetGameStatus {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            game_entry: game_pda(game_program),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_transfer_game_owner(
+    owner: &Pubkey,
+    new_owner: &Pubkey,
+    game_program: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::TransferGameOwner {}.data(),
+        platform_core::accounts::TransferGameOwner {
+            owner: *owner,
+            new_owner: *new_owner,
+            game_entry: game_pda(game_program),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_force_set_game_owner(
+    admin: &Pubkey,
+    game_program: &Pubkey,
+    new_owner: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::ForceSetGameOwner {
+            new_owner: *new_owner,
+        }
+        .data(),
+        platform_core::accounts::ForceSetGameOwner {
+            admin: *admin,
+            admin_role: role_pda(Role::Admin, admin),
+            game_entry: game_pda(game_program),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_allow_mint(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::AllowMint { auth_role_kind }.data(),
+        platform_core::accounts::AllowMint {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            config: config_pda(),
+            treasury: treasury_pda(),
+            mint: *mint,
+            allowed_mint: allowed_mint_pda(mint),
+            treasury_ata: ata(&treasury_pda(), mint, token_program),
+            token_program: *token_program,
+            associated_token_program: ATA_PROGRAM,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_disallow_mint(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    mint: &Pubkey,
+    added_by: &Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::DisallowMint { auth_role_kind }.data(),
+        platform_core::accounts::DisallowMint {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            allowed_mint: allowed_mint_pda(mint),
+            added_by: *added_by,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_withdraw_sol(admin: &Pubkey, to: &Pubkey, amount: u64) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::WithdrawSol { amount }.data(),
+        platform_core::accounts::WithdrawSol {
+            admin: *admin,
+            admin_role: role_pda(Role::Admin, admin),
+            config: config_pda(),
+            treasury: treasury_pda(),
+            to: *to,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_withdraw_token(
+    admin: &Pubkey,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+    to: &Pubkey,
+    amount: u64,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::WithdrawToken { amount }.data(),
+        platform_core::accounts::WithdrawToken {
+            admin: *admin,
+            admin_role: role_pda(Role::Admin, admin),
+            config: config_pda(),
+            treasury: treasury_pda(),
+            mint: *mint,
+            treasury_ata: ata(&treasury_pda(), mint, token_program),
+            to: *to,
+            token_program: *token_program,
+        }
+        .to_account_metas(None),
+    )
+}
+
+/// Replace the account at `index` in `ix` (account-substitution tests).
+pub fn replace_account(ix: &mut Instruction, index: usize, key: Pubkey) {
+    let m: &mut AccountMeta = &mut ix.accounts[index];
+    m.pubkey = key;
+}
+
+/// Grants `role` to a fresh funded keypair and returns it.
+pub fn holder(env: &mut Env, admin: &Keypair, role: Role) -> Keypair {
+    let k = funded(&mut env.svm);
+    assert_ok(&send(
+        &mut env.svm,
+        &[ix_grant_role(&admin.pubkey(), role, &k.pubkey())],
+        &[admin],
+    ));
+    k
+}
+
+/// Deploys a copy of our .so at a fresh address through the *upgradeable* loader — a
+/// stand-in for a real game program.
+pub fn deploy_game(svm: &mut LiteSVM) -> Pubkey {
+    let id = Pubkey::new_unique();
+    let bytes = include_bytes!(concat!(
+        env!("CARGO_TARGET_TMPDIR"),
+        "/../deploy/platform_core.so"
+    ));
+    svm.add_program(id, bytes).unwrap();
+    id
+}
+
+pub fn spl_token_2022_id() -> Pubkey {
+    spl_token_2022::ID
+}

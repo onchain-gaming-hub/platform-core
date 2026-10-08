@@ -28,4 +28,6 @@ pub enum PlatformError {
     MathOverflow, // 6010
     #[msg("Role member must not be the default (all-zero) pubkey")]
     InvalidMember, // 6011
+    #[msg("Game program must be an upgradeable BPF program other than platform-core")]
+    InvalidGameProgram, // 6012
 }
