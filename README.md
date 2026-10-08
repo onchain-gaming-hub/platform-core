@@ -14,4 +14,4 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 | Decisions | [`../DECISIONS.md`](../DECISIONS.md) |
 | Owner | `maintainer` (`<internal>`) |
 
-สถานะ: spec draft — ยังไม่มี code (devnet only)
+สถานะ: **Phase 0 เสร็จ** (account layout + constants + errors + events · ยังไม่มี instruction) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
