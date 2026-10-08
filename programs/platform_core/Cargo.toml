@@ -24,11 +24,13 @@ custom-panic = []
 anchor-lang = "1.2.1"
 
 [dev-dependencies]
-litesvm = "0.10.0"
-solana-message = "3.0.1"
-solana-transaction = "3.0.2"
-solana-signer = "3.0.0"
-solana-keypair = "3.0.1"
+# LiteSVM 0.17 = agave 4.3 runtime — matches cargo-build-sbf 4.3.0 (SBPF v3).
+# The template's 0.10 (agave 3.1) cannot load our .so (InvalidAccountData).
+litesvm = "0.17.0"
+solana-message = "4.2.4"
+solana-transaction = "4.1.5"
+solana-signer = "3.0.1"
+solana-keypair = "3.1.2"
 sha2 = "0.11.0"
 
 

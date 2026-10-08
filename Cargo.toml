@@ -6,6 +6,8 @@ resolver = "2"
 
 [workspace.package]
 edition = "2021"
+# Program MSRV (= anchor-lang 1.2.1). Tests need >= 1.97.1 (litesvm 0.17 / agave 4.3)
+# — rust-toolchain.toml pins 1.99.0 for that.
 rust-version = "1.89.0"
 
 [profile.release]

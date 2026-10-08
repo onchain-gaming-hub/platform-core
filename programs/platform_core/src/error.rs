@@ -26,4 +26,6 @@ pub enum PlatformError {
     InvalidImageHash, // 6009
     #[msg("Arithmetic overflow")]
     MathOverflow, // 6010
+    #[msg("Role member must not be the default (all-zero) pubkey")]
+    InvalidMember, // 6011
 }

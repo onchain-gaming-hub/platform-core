@@ -14,4 +14,8 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 | Decisions | [`../DECISIONS.md`](../DECISIONS.md) |
 | Owner | `maintainer` (`<internal>`) |
 
-สถานะ: **Phase 0 เสร็จ** (account layout + constants + errors + events · ยังไม่มี instruction) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
+สถานะ: **Phase 1 เสร็จ** (layout + `initialize` · RBAC · `set_fee`) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
+
+```bash
+anchor build && cargo test -p platform_core   # test โหลด .so ที่ build แล้ว — build ก่อนเสมอ
+```
