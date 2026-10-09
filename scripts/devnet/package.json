@@ -1,0 +1,9 @@
+{
+  "name": "platform-core-devnet-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Devnet runbook helpers for platform-core (initialize + verify). Never point at mainnet.",
+  "dependencies": {
+    "@solana/web3.js": "1.99.0"
+  }
+}
