@@ -14,8 +14,9 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 | Decisions | [`../DECISIONS.md`](../DECISIONS.md) |
 | Owner | `maintainer` (`<internal>`) |
 
-สถานะ: **Phase 2 เสร็จ** (layout · `initialize` · RBAC · `set_fee` · game registry · boost allowlist · treasury withdraw) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
+สถานะ: **Phase 0–3 เสร็จ** (layout · `initialize` · RBAC · `set_fee` · game registry · boost allowlist · treasury · default ads · IDL export · consumer kit verified) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
 
 ```bash
-anchor build && cargo test -p platform_core   # test โหลด .so ที่ build แล้ว — build ก่อนเสมอ
+./scripts/test.sh          # anchor build + build mock consumer + cargo test (test โหลด .so ที่ build แล้ว)
+./scripts/export-idl.sh    # หลัง anchor build: อัปเดต idls/platform_core.json ที่ consumer ใช้
 ```

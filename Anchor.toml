@@ -4,6 +4,11 @@ skip_local_validator = true
 anchor_version = "1.2.1"
 solana_version = "4.3.0"
 
+[workspace]
+# Only platform-core is an Anchor program of this repo. tests/mock-consumer is test-only
+# and must never be deployed.
+members = ["programs/platform_core"]
+
 [features]
 resolution = true
 skip-lint = false

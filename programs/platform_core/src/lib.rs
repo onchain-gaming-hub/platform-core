@@ -1,8 +1,8 @@
 //! platform-core — shared program of blockchain-games-hub.
 //! Design: specs/designs/ (01 layout · 02 instructions · 03 consumer integration).
 //!
-//! Phase 2: + game registry · boost mint allowlist · treasury withdraw
-//! (specs/designs/04-implementation-plan.md).
+//! Phases 0–3 complete: layouts · RBAC · fee · game registry · boost allowlist ·
+//! treasury · default ads (specs/designs/04-implementation-plan.md).
 
 pub mod constants;
 pub mod error;
@@ -102,5 +102,40 @@ pub mod platform_core {
     /// Admin only. From the Treasury ATA of `mint`.
     pub fn withdraw_token(ctx: Context<WithdrawToken>, amount: u64) -> Result<()> {
         instructions::withdraw_token::handle_withdraw_token(ctx, amount)
+    }
+
+    /// Moderator | Admin. One default ad per (width, height).
+    pub fn create_default_ad(
+        ctx: Context<CreateDefaultAd>,
+        auth_role_kind: Role,
+        width: u16,
+        height: u16,
+        creative: AdCreative,
+    ) -> Result<()> {
+        instructions::manage_default_ad::handle_create_default_ad(
+            ctx,
+            auth_role_kind,
+            width,
+            height,
+            creative,
+        )
+    }
+
+    /// Moderator | Admin.
+    pub fn update_default_ad(
+        ctx: Context<UpdateDefaultAd>,
+        auth_role_kind: Role,
+        creative: AdCreative,
+    ) -> Result<()> {
+        instructions::manage_default_ad::handle_update_default_ad(ctx, auth_role_kind, creative)
+    }
+
+    /// Moderator | Admin. Disabled = FE shows nothing for that size.
+    pub fn set_default_ad_enabled(
+        ctx: Context<SetDefaultAdEnabled>,
+        auth_role_kind: Role,
+        enabled: bool,
+    ) -> Result<()> {
+        instructions::manage_default_ad::handle_set_default_ad_enabled(ctx, auth_role_kind, enabled)
     }
 }

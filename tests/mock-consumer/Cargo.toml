@@ -1,0 +1,28 @@
+[package]
+name = "mock_consumer"
+version = "0.0.0"
+description = "TEST ONLY — never deploy. Proves specs/designs/03 consumer snippets compile and work against platform-core via declare_program!."
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mock_consumer"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "1.2.1"
+anchor-spl = "1.2.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

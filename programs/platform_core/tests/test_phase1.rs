@@ -145,10 +145,7 @@ fn initialize_rejects_programdata_of_another_program() {
     let mut env = setup();
     let attacker = funded(&mut env.svm);
     let other_program = Pubkey::new_unique();
-    let bytes = include_bytes!(concat!(
-        env!("CARGO_TARGET_TMPDIR"),
-        "/../deploy/platform_core.so"
-    ));
+    let bytes = &program_so("platform_core");
     env.svm.add_program(other_program, bytes).unwrap();
     set_upgrade_authority(&mut env.svm, &other_program, Some(attacker.pubkey()));
 

@@ -1818,6 +1818,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock_consumer"
+version = "0.0.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1982,6 +1990,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "litesvm",
+ "mock_consumer",
  "sha2 0.11.0",
  "solana-keypair",
  "solana-message",

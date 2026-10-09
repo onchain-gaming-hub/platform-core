@@ -1,6 +1,8 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/*",
+    # TEST ONLY consumer program (not an Anchor workspace program → never built/deployed by `anchor`)
+    "tests/mock-consumer",
 ]
 resolver = "2"
 

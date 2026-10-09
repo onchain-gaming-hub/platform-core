@@ -22,6 +22,14 @@ use {
 
 pub const SOL: u64 = 1_000_000_000;
 
+/// Reads a program binary from `target/deploy` at RUNTIME (not `include_bytes!`):
+/// `anchor build` compiles every test target to produce the IDL, so a compile-time
+/// include of a not-yet-built .so would break the build itself.
+pub fn program_so(name: &str) -> Vec<u8> {
+    let path = format!("{}/../deploy/{name}.so", env!("CARGO_TARGET_TMPDIR"));
+    std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e} — build first: ./scripts/test.sh"))
+}
+
 pub struct Env {
     pub svm: LiteSVM,
     pub upgrade_authority: Keypair,
@@ -34,10 +42,7 @@ pub struct Env {
 /// authority on its ProgramData (LiteSVM creates it with `None`).
 pub fn setup() -> Env {
     let mut svm = LiteSVM::new();
-    let bytes = include_bytes!(concat!(
-        env!("CARGO_TARGET_TMPDIR"),
-        "/../deploy/platform_core.so"
-    ));
+    let bytes = &program_so("platform_core");
     svm.add_program(platform_core::id(), bytes).unwrap();
     let upgrade_authority = funded(&mut svm);
     set_upgrade_authority(
@@ -356,6 +361,8 @@ pub enum TestExt {
     MintCloseAuthority,
     /// Extension present but no authority → mint can never be closed (allowed).
     MintCloseAuthorityNone,
+    /// Q8 (maintainer 2026-10-09): accepted, like a freeze authority.
+    Pausable,
 }
 
 impl TestExt {
@@ -372,6 +379,7 @@ impl TestExt {
             TestExt::MintCloseAuthority | TestExt::MintCloseAuthorityNone => {
                 ExtensionType::MintCloseAuthority
             }
+            TestExt::Pausable => ExtensionType::Pausable,
         }
     }
 
@@ -403,6 +411,10 @@ impl TestExt {
             }
             TestExt::MintCloseAuthorityNone => {
                 t22_ix::initialize_mint_close_authority(p, mint, None).unwrap()
+            }
+            TestExt::Pausable => {
+                spl_token_2022::extension::pausable::instruction::initialize(p, mint, authority)
+                    .unwrap()
             }
         }
     }
@@ -702,14 +714,283 @@ pub fn holder(env: &mut Env, admin: &Keypair, role: Role) -> Keypair {
 /// stand-in for a real game program.
 pub fn deploy_game(svm: &mut LiteSVM) -> Pubkey {
     let id = Pubkey::new_unique();
-    let bytes = include_bytes!(concat!(
-        env!("CARGO_TARGET_TMPDIR"),
-        "/../deploy/platform_core.so"
-    ));
+    let bytes = &program_so("platform_core");
     svm.add_program(id, bytes).unwrap();
     id
 }
 
 pub fn spl_token_2022_id() -> Pubkey {
     spl_token_2022::ID
+}
+
+// ================================================================ Phase 3
+
+use platform_core::state::AdCreative;
+
+pub fn default_ad_pda(width: u16, height: u16) -> Pubkey {
+    Pubkey::find_program_address(
+        &[DEFAULT_AD_SEED, &width.to_le_bytes(), &height.to_le_bytes()],
+        &platform_core::id(),
+    )
+    .0
+}
+
+pub fn creative(tag: &str) -> AdCreative {
+    AdCreative {
+        image_url: format!("https://r2.hub/ads/{tag}.png"),
+        image_sha256: [7u8; 32],
+        text: format!("default ad {tag}"),
+        click_url: "https://hub.example/play".into(),
+    }
+}
+
+pub fn ix_create_default_ad(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    width: u16,
+    height: u16,
+    creative: AdCreative,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::CreateDefaultAd {
+            auth_role_kind,
+            width,
+            height,
+            creative,
+        }
+        .data(),
+        platform_core::accounts::CreateDefaultAd {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            default_ad: default_ad_pda(width, height),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_update_default_ad(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    default_ad: &Pubkey,
+    creative: AdCreative,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::UpdateDefaultAd {
+            auth_role_kind,
+            creative,
+        }
+        .data(),
+        platform_core::accounts::UpdateDefaultAd {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            default_ad: *default_ad,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn ix_set_default_ad_enabled(
+    signer: &Pubkey,
+    auth_role_kind: Role,
+    default_ad: &Pubkey,
+    enabled: bool,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        platform_core::id(),
+        &platform_core::instruction::SetDefaultAdEnabled {
+            auth_role_kind,
+            enabled,
+        }
+        .data(),
+        platform_core::accounts::SetDefaultAdEnabled {
+            signer: *signer,
+            auth_role: role_pda(auth_role_kind, signer),
+            default_ad: *default_ad,
+        }
+        .to_account_metas(None),
+    )
+}
+
+/// Loads the TEST ONLY mock consumer (built by
+/// `cargo build-sbf --manifest-path tests/mock-consumer/Cargo.toml --sbf-out-dir target/deploy`)
+/// through the upgradeable loader, so it can also be registered as a game.
+pub fn load_mock_consumer(svm: &mut LiteSVM) {
+    let bytes = &program_so("mock_consumer");
+    svm.add_program(mock_consumer::ID, bytes).unwrap();
+}
+
+pub fn mock_game_authority() -> Pubkey {
+    Pubkey::find_program_address(&[mock_consumer::GAME_AUTHORITY_SEED], &mock_consumer::ID).0
+}
+
+pub fn mock_snapshot_pda(game_program: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[mock_consumer::SNAPSHOT_SEED, game_program.as_ref()],
+        &mock_consumer::ID,
+    )
+    .0
+}
+
+pub fn mock_escrow_pda() -> Pubkey {
+    Pubkey::find_program_address(&[mock_consumer::ESCROW_SEED], &mock_consumer::ID).0
+}
+
+fn mock_ix(data: Vec<u8>, accounts: Vec<AccountMeta>) -> Instruction {
+    Instruction {
+        program_id: mock_consumer::ID,
+        accounts,
+        data,
+    }
+}
+
+pub fn mix_game_open_pool(payer: &Pubkey) -> Instruction {
+    let game = mock_consumer::ID;
+    mock_ix(
+        mock_consumer::instruction::GameOpenPool {}.data(),
+        mock_consumer::accounts::GameOpenPool {
+            payer: *payer,
+            game_authority: mock_game_authority(),
+            game_program: game,
+            game_entry: game_pda(&game),
+            config: config_pda(),
+            snapshot: mock_snapshot_pda(&game),
+            system_program: system_program::ID,
+            this_program: mock_consumer::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+/// Calls the consumer instruction directly, with `game_authority` chosen by the caller.
+pub fn mix_open_pool_direct(payer: &Pubkey, game_authority: &Pubkey) -> Instruction {
+    let game = mock_consumer::ID;
+    mock_ix(
+        mock_consumer::instruction::OpenPool {}.data(),
+        mock_consumer::accounts::OpenPool {
+            payer: *payer,
+            game_authority: *game_authority,
+            game_program: game,
+            game_entry: game_pda(&game),
+            config: config_pda(),
+            snapshot: mock_snapshot_pda(&game),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_owner_action(game_program: &Pubkey, game_owner: &Pubkey) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::OwnerAction {}.data(),
+        mock_consumer::accounts::OwnerAction {
+            game_program: *game_program,
+            game_entry: game_pda(game_program),
+            game_owner: *game_owner,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_moderate(moderator: &Pubkey, moderator_role: &Pubkey) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::Moderate {}.data(),
+        mock_consumer::accounts::Moderate {
+            moderator_role: *moderator_role,
+            moderator: *moderator,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_pay_fee_from_user(user: &Pubkey, treasury: &Pubkey, amount: u64) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::PayFeeFromUser { amount }.data(),
+        mock_consumer::accounts::PayFeeFromUser {
+            user: *user,
+            config: config_pda(),
+            treasury: *treasury,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_init_escrow(payer: &Pubkey) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::InitEscrow {}.data(),
+        mock_consumer::accounts::InitEscrow {
+            payer: *payer,
+            escrow: mock_escrow_pda(),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_settle(
+    game_program: &Pubkey,
+    game_owner: &Pubkey,
+    amount: u64,
+    fee_bps: u16,
+) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::Settle { amount, fee_bps }.data(),
+        mock_consumer::accounts::Settle {
+            escrow: mock_escrow_pda(),
+            game_program: *game_program,
+            game_entry: game_pda(game_program),
+            game_owner: *game_owner,
+            config: config_pda(),
+            treasury: treasury_pda(),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_settle_typed_treasury(fee: u64) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::SettleTypedTreasury { fee }.data(),
+        mock_consumer::accounts::SettleTypedTreasury {
+            escrow: mock_escrow_pda(),
+            config: config_pda(),
+            treasury: treasury_pda(),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_boost_check(mint: &Pubkey) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::BoostCheck {}.data(),
+        mock_consumer::accounts::BoostCheck {
+            mint: *mint,
+            allowed_mint: allowed_mint_pda(mint),
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn mix_collect_fee_token(
+    user: &Pubkey,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+    user_ata: &Pubkey,
+    amount: u64,
+) -> Instruction {
+    mock_ix(
+        mock_consumer::instruction::CollectFeeToken { amount }.data(),
+        mock_consumer::accounts::CollectFeeToken {
+            user: *user,
+            mint: *mint,
+            config: config_pda(),
+            treasury: treasury_pda(),
+            treasury_ata: ata(&treasury_pda(), mint, token_program),
+            user_ata: *user_ata,
+            token_program: *token_program,
+        }
+        .to_account_metas(None),
+    )
 }
