@@ -14,7 +14,7 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 | Decisions | [`../DECISIONS.md`](../DECISIONS.md) |
 | Owner | `maintainer` (`<internal>`) |
 
-สถานะ: **Phase 0–3 เสร็จ** (layout · `initialize` · RBAC · `set_fee` · game registry · boost allowlist · treasury · default ads · IDL export · consumer kit verified) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
+สถานะ: **deploy บน devnet แล้ว 2026-10-09** (`AJnPSY…u18G` · slot 509128032 · initialize ✅ — ดู [`specs/deploy/devnet-runbook.md`](specs/deploy/devnet-runbook.md)) · **Phase 0–3 เสร็จ** (layout · `initialize` · RBAC · `set_fee` · game registry · boost allowlist · treasury · default ads · IDL export · consumer kit verified) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
 
 > ⚠️ **ไม่ผ่าน gasless relayer**: ทุก instruction ของ platform-core ใช้ wallet ที่มี SOL ของตัวเอง (Admin / role holder / Moderator Worker / เจ้าของเกม — Phantom / CLI / Squads) · social login สำหรับผู้เล่นเกมเท่านั้น · ดู `specs/designs/03-consumer-integration-v1.md` §5.1
 
