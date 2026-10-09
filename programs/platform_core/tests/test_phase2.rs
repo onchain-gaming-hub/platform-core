@@ -695,3 +695,67 @@ fn disallow_mint_rejects_other_account_types() {
     }
     assert!(!is_closed(&env.svm, &allowed_mint_pda(&mint)));
 }
+
+// ============================================== pure 1/1 NFT (maintainer 2026-10-09)
+
+/// decimals 0 mint with `supply` minted to `admin`, optionally without mint authority.
+fn nft_like(
+    env: &mut Env,
+    admin: &Keypair,
+    tp: &Pubkey,
+    supply: u64,
+    drop_authority: bool,
+) -> Pubkey {
+    let mint = create_mint(&mut env.svm, admin, tp, 0, &[]);
+    let holder_ata = create_ata(&mut env.svm, admin, &admin.pubkey(), &mint, tp);
+    mint_to(&mut env.svm, admin, &mint, &holder_ata, tp, supply, 0);
+    if drop_authority {
+        drop_mint_authority(&mut env.svm, admin, &mint, tp);
+    }
+    mint
+}
+
+#[test]
+fn pure_one_of_one_nft_gets_no_treasury_ata() {
+    // R14: 0% fee on NFTs → the Treasury ATA would never receive anything.
+    let mut env = setup();
+    let admin = init_default(&mut env);
+    for tp in [TOKEN_PROGRAM, TOKEN_2022_PROGRAM] {
+        let mint = nft_like(&mut env, &admin, &tp, 1, true);
+        let before = lamports(&env.svm, &admin.pubkey());
+        allow(&mut env, &admin, Role::Admin, &mint, &tp);
+        assert!(
+            !is_closed(&env.svm, &allowed_mint_pda(&mint)),
+            "still allowlisted"
+        );
+        assert!(
+            is_closed(&env.svm, &ata(&treasury_pda(), &mint, &tp)),
+            "no Treasury ATA for a pure 1/1"
+        );
+        // Only AllowedMint rent (+ tx fee) was spent — no ATA rent.
+        let spent = before - lamports(&env.svm, &admin.pubkey());
+        let allowed_rent = lamports(&env.svm, &allowed_mint_pda(&mint));
+        assert!(spent < allowed_rent + 1_000_000, "{tp}: spent {spent}");
+    }
+}
+
+#[test]
+fn nft_like_mints_that_can_still_pay_fees_keep_the_treasury_ata() {
+    let mut env = setup();
+    let admin = init_default(&mut env);
+    for tp in [TOKEN_PROGRAM, TOKEN_2022_PROGRAM] {
+        // 1/1 but mint authority still set → supply can grow later → may owe fees.
+        let open_edition = nft_like(&mut env, &admin, &tp, 1, false);
+        // decimals 0, supply > 1 (≈ ERC-1155) → divisible, pays fees (maintainer 2026-10-09).
+        let semi_fungible = nft_like(&mut env, &admin, &tp, 5, true);
+        for mint in [open_edition, semi_fungible] {
+            allow(&mut env, &admin, Role::Admin, &mint, &tp);
+            let t_ata = ata(&treasury_pda(), &mint, &tp);
+            assert_eq!(
+                token_account_owner(&env.svm, &t_ata),
+                treasury_pda(),
+                "{tp} {mint}"
+            );
+        }
+    }
+}

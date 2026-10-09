@@ -994,3 +994,22 @@ pub fn mix_collect_fee_token(
         .to_account_metas(None),
     )
 }
+
+/// Removes the mint authority (makes supply permanent) — used to build pure 1/1 NFTs.
+pub fn drop_mint_authority(
+    svm: &mut LiteSVM,
+    authority: &Keypair,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+) {
+    let ix = t22_ix::set_authority(
+        token_program,
+        mint,
+        None,
+        t22_ix::AuthorityType::MintTokens,
+        &authority.pubkey(),
+        &[],
+    )
+    .unwrap();
+    assert_ok(&send(svm, &[ix], &[authority]));
+}

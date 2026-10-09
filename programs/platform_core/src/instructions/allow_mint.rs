@@ -15,7 +15,8 @@ use crate::{
 };
 
 /// AllowlistManager | Admin allows a mint for boost (02 §2.5 · Q4 · Q5) and makes sure
-/// the Treasury's ATA for it exists (X3), so consumers never `init_if_needed` it.
+/// the Treasury's ATA for it exists (X3), so consumers never `init_if_needed` it —
+/// except for a pure 1/1 NFT, which never pays a platform fee (R14 · maintainer 2026-10-09).
 /// The ATA is created with `create_idempotent`: anyone can pre-create a Treasury ATA,
 /// and a plain `init` would then fail (DoS). Its rent is never refunded (R4).
 #[derive(Accounts)]
@@ -70,17 +71,9 @@ pub struct AllowMint<'info> {
 pub fn handle_allow_mint(ctx: Context<AllowMint>, _auth_role_kind: Role) -> Result<()> {
     check_mint_extensions(&ctx.accounts.mint.to_account_info())?;
 
-    associated_token::create_idempotent(CpiContext::new(
-        ctx.accounts.associated_token_program.key(),
-        associated_token::Create {
-            payer: ctx.accounts.signer.to_account_info(),
-            associated_token: ctx.accounts.treasury_ata.to_account_info(),
-            authority: ctx.accounts.treasury.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
-        },
-    ))?;
+    if !is_pure_one_of_one(&ctx.accounts.mint) {
+        create_treasury_ata(&ctx)?;
+    }
 
     let mint = ctx.accounts.mint.key();
     let token_program = ctx.accounts.token_program.key();
@@ -97,5 +90,29 @@ pub fn handle_allow_mint(ctx: Context<AllowMint>, _auth_role_kind: Role) -> Resu
         mint,
         token_program,
     });
+    Ok(())
+}
+
+/// A mint that can never be divided or grow: exactly one unit, no decimals and no mint
+/// authority left. Platform fee on NFTs is 0% (R14), so its Treasury ATA would never be
+/// used. Without the mint-authority condition supply could grow later, the mint would
+/// owe fees, and `collect_fee` would fail for lack of the ATA — so such mints still get
+/// one. The ATA can still be created by anyone later (idempotent) if ever needed.
+fn is_pure_one_of_one(mint: &InterfaceAccount<Mint>) -> bool {
+    mint.decimals == 0 && mint.supply == 1 && mint.mint_authority.is_none()
+}
+
+fn create_treasury_ata(ctx: &Context<AllowMint>) -> Result<()> {
+    associated_token::create_idempotent(CpiContext::new(
+        ctx.accounts.associated_token_program.key(),
+        associated_token::Create {
+            payer: ctx.accounts.signer.to_account_info(),
+            associated_token: ctx.accounts.treasury_ata.to_account_info(),
+            authority: ctx.accounts.treasury.to_account_info(),
+            mint: ctx.accounts.mint.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+        },
+    ))?;
     Ok(())
 }
