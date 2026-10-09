@@ -16,6 +16,8 @@ program กลางของ **blockchain-games-hub** (Solana · Anchor) — �
 
 สถานะ: **Phase 0–3 เสร็จ** (layout · `initialize` · RBAC · `set_fee` · game registry · boost allowlist · treasury · default ads · IDL export · consumer kit verified) — ดู [`specs/designs/04-implementation-plan.md`](specs/designs/04-implementation-plan.md) · devnet only
 
+> ⚠️ **ไม่ผ่าน gasless relayer**: ทุก instruction ของ platform-core ใช้ wallet ที่มี SOL ของตัวเอง (Admin / role holder / Moderator Worker / เจ้าของเกม — Phantom / CLI / Squads) · social login สำหรับผู้เล่นเกมเท่านั้น · ดู `specs/designs/03-consumer-integration-v1.md` §5.1
+
 ```bash
 ./scripts/test.sh          # anchor build + build mock consumer + cargo test (test โหลด .so ที่ build แล้ว)
 ./scripts/export-idl.sh    # หลัง anchor build: อัปเดต idls/platform_core.json ที่ consumer ใช้
