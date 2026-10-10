@@ -497,3 +497,31 @@ fn assert_failed_with_any_of(res: &litesvm::types::TransactionResult, codes: &[u
         }
     }
 }
+
+#[test]
+fn settle_pays_a_program_owned_owner_k4() {
+    // K-4 / ad-pool A29: if GameEntry.owner is not system-owned (e.g. an Admin
+    // force_set_game_owner mistake), settle must still go through — the snippet uses
+    // `UncheckedAccount` + `address`, not `SystemAccount`. Money still only reaches the
+    // pinned owner address.
+    let mut w = world();
+    fund_escrow(&mut w, SOL);
+    let admin = w.admin.insecure_clone();
+    let program_owned = config_pda(); // owned by platform-core, has data
+    let ix = ix_force_set_game_owner(&admin.pubkey(), &mock_consumer::ID, &program_owned);
+    assert_ok(&send(&mut w.env.svm, &[ix], &[&admin]));
+
+    let o0 = lamports(&w.env.svm, &program_owned);
+    let payer = funded(&mut w.env.svm);
+    let ix = mix_settle(&mock_consumer::ID, &program_owned, 1_000, 100);
+    assert_ok(&send(&mut w.env.svm, &[ix], &[&payer]));
+    assert_eq!(lamports(&w.env.svm, &program_owned), o0 + 990);
+    // The credited account's data is untouched.
+    let cfg: platform_core::state::PlatformConfig = fetch(&w.env.svm, &config_pda());
+    assert_eq!(cfg.version, platform_core::constants::ACCOUNT_VERSION);
+
+    // Still pinned: any other destination is rejected.
+    let other = funded(&mut w.env.svm).pubkey();
+    let ix = mix_settle(&mock_consumer::ID, &other, 1_000, 100);
+    assert_custom_err(&send(&mut w.env.svm, &[ix], &[&payer]), MOCK_NOT_GAME_OWNER);
+}

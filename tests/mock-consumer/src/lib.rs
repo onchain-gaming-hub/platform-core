@@ -312,8 +312,10 @@ pub struct Settle<'info> {
     )]
     pub game_entry: Account<'info, GameEntry>,
 
+    /// CHECK: K-4 / ad-pool A29 — pinned by `address`; UncheckedAccount (not
+    /// SystemAccount) so settle never gets stuck if the owner isn't system-owned.
     #[account(mut, address = game_entry.owner @ MockError::NotGameOwner)]
-    pub game_owner: SystemAccount<'info>,
+    pub game_owner: UncheckedAccount<'info>,
 
     #[account(seeds = [b"config"], bump = config.bump, seeds::program = platform_core::ID)]
     pub config: Account<'info, PlatformConfig>,
