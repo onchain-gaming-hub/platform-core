@@ -8,7 +8,7 @@ description: How to use the blockchain-games-hub platform-core program from anot
 > Program `platform_core` · IDL **0.1.0** · Anchor 1.2.1 · **devnet** `AJnPSYsn7J2muHfKztRtpZz5kBP94dWkNZLr9aMhu18G` (deploy slot 509128032)
 > Source of truth: [`idls/platform_core.json`](../../idls/platform_core.json) and [`programs/platform_core/src/`](../../programs/platform_core/src/). If this guide and the IDL disagree, the IDL wins. Please report it.
 > Every Rust snippet in §2–§3 is copied into a test-only consumer program, [`tests/mock-consumer`](../../tests/mock-consumer/src/lib.rs), and exercised by `programs/platform_core/tests/test_consumer.rs` (passing and failing paths, including fake mint / fake ATA / fake Treasury).
-> Hub overview and the other components: [`SKILL.md`](../../SKILL.md) at the repo root. Maintainer: maintainer · version 2026-10-11.
+> Hub overview and the other components: [`SKILL.md`](../../SKILL.md) at the repo root. Maintained by the blockchain-games-hub maintainers · version 2026-10-11.
 
 ## 0. Mental model
 

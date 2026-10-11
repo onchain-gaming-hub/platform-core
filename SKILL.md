@@ -5,7 +5,7 @@ description: Entry point for building on blockchain-games-hub — a set of share
 
 # blockchain-games-hub — Start Here
 
-> Maintainer: maintainer · version **2026-10-11** · **devnet only** (no mainnet deployment exists)
+> Maintained by the blockchain-games-hub maintainers · version **2026-10-11** · **devnet only** (no mainnet deployment exists)
 > This file is a **map**. Each component's own guide is the source of truth for that component, and each program's IDL wins over any prose. If this file and a component guide disagree, the component guide wins. Please report the mismatch (§7).
 > Repositories live under the GitHub organisation `solana-games-hub`. Links below point at the `main` branch.
 
@@ -59,7 +59,7 @@ Each step depends on the one before it.
 4. **lobby:** the owner calls `init_lobby(params)` once; your start/finish instructions CPI `begin_match` / `end_match` (lobby §5).
 5. **rewards-pool:** CPI `open_pool*` at match start and `settle` at match end; players, boosters and cranks do the rest (rewards-pool §0, §4). Token prizes need the mint on the platform-core allowlist.
 6. **ad-pool (optional):** the owner calls `init_ad_config` once to define slots; your frontend renders ads by reading accounts (ad-pool §4, §7).
-7. **relayer:** send your program ID, the instructions to sponsor and their account layout (relayer integration §5). maintainer registers the program in the hub's single relayer project (created when hub-web deploys); the relayer pins your program's deploy slot, so **every upgrade pauses sponsorship until it is reviewed again**.
+7. **relayer:** send your program ID, the instructions to sponsor and their account layout (relayer integration §5). A hub admin registers the program in the hub's single relayer project (created when hub-web deploys); the relayer pins your program's deploy slot, so **every upgrade pauses sponsorship until it is reviewed again**.
 8. **Embed in the hub (hub-bridge).** Your game page runs in the hub's iframe from its own origin and asks the hub to sign through `postMessage`. ⏳ The hub-bridge SDK and its guide are not published yet (planned repo: `solana-games-hub/hub-bridge`). Until then, a game can be played standalone with its own wallet connection.
 
 ## 3. Rules every program in the hub follows
