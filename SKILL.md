@@ -7,7 +7,7 @@ description: Entry point for building on blockchain-games-hub — a set of share
 
 > Maintained by the blockchain-games-hub maintainers · version **2026-10-11** · **devnet only** (no mainnet deployment exists)
 > This file is a **map**. Each component's own guide is the source of truth for that component, and each program's IDL wins over any prose. If this file and a component guide disagree, the component guide wins. Please report the mismatch (§7).
-> Repositories live under the GitHub organisation `solana-games-hub`. Links below point at the `main` branch.
+> Repositories live under the GitHub organisation `onchain-gaming-hub`. Links below point at the `main` branch.
 
 ## 0. The hub in 30 seconds
 
@@ -16,11 +16,11 @@ Games run **fully on-chain** as Anchor programs. Instead of rebuilding rooms, pr
 | Component | What it does for your game | Devnet program ID | IDL | Guide |
 |---|---|---|---|---|
 | **platform-core** (this repo) | Game Registry (`GameEntry`), roles (RBAC), platform fees + Treasury, boost token allowlist, default ads | `AJnPSYsn7J2muHfKztRtpZz5kBP94dWkNZLr9aMhu18G` | 0.1.0 | [`skills/platform-core-integration/SKILL.md`](skills/platform-core-integration/SKILL.md) |
-| **lobby** | Rooms, quick match, ready check, rematch, bot seats · your game CPIs `begin_match` / `end_match` | `5zdBSvep3yV6v1SVD67uw9N5Wb3eT9Hp9D3eg4YSRqRu` | 0.1.0 (frozen) | [lobby `skills/lobby-integration/SKILL.md`](https://github.com/solana-games-hub/lobby/blob/main/skills/lobby-integration/SKILL.md) |
-| **rewards-pool** | Per-match prize pools (SOL / token / NFT), community **Boost**, settle → claim | `HgApfwjAg1L2FJL3fX7A4WX5yfhrVV8k9Ahii5Pn8HVW` | 1.0.0 | [rewards-pool `SKILL.md`](https://github.com/solana-games-hub/rewards-pool/blob/main/SKILL.md) |
-| **ad-pool** | Per-game ad slots auctioned in SOL, AI-moderated creatives, 99 % of revenue to the game owner | `6T2vwUm5EPBAUQaZNcPwEkgK4rHc9AjoET6DaTq3LEqk` | 0.1.0 | [ad-pool `SKILL.md`](https://github.com/solana-games-hub/ad-pool/blob/main/SKILL.md) |
-| **relayer** | Pays fees (and can front rent) for registered program instructions · Cloudflare Worker | — (off-chain) | — | design rules: [relayer `skills/gasless-relayer-integration/SKILL.md`](https://github.com/solana-games-hub/relayer/blob/main/skills/gasless-relayer-integration/SKILL.md) · deployed values + onboarding: [relayer `SKILL.md`](https://github.com/solana-games-hub/relayer/blob/main/SKILL.md) |
-| **hub-bridge** | Lets a game on **any origin** run inside the hub's iframe and use the player's wallet over `postMessage` | — (TS SDK) | — | ⏳ **not published yet** — currently specified inside `solana-games-hub/hub-web` (`packages/hub-bridge`); planned to move to its own public repo (§2 step 8) |
+| **lobby** | Rooms, quick match, ready check, rematch, bot seats · your game CPIs `begin_match` / `end_match` | `5zdBSvep3yV6v1SVD67uw9N5Wb3eT9Hp9D3eg4YSRqRu` | 0.1.0 (frozen) | [lobby `skills/lobby-integration/SKILL.md`](https://github.com/onchain-gaming-hub/lobby/blob/main/skills/lobby-integration/SKILL.md) |
+| **rewards-pool** | Per-match prize pools (SOL / token / NFT), community **Boost**, settle → claim | `HgApfwjAg1L2FJL3fX7A4WX5yfhrVV8k9Ahii5Pn8HVW` | 1.0.0 | [rewards-pool `SKILL.md`](https://github.com/onchain-gaming-hub/rewards-pool/blob/main/SKILL.md) |
+| **ad-pool** | Per-game ad slots auctioned in SOL, AI-moderated creatives, 99 % of revenue to the game owner | `6T2vwUm5EPBAUQaZNcPwEkgK4rHc9AjoET6DaTq3LEqk` | 0.1.0 | [ad-pool `SKILL.md`](https://github.com/onchain-gaming-hub/ad-pool/blob/main/SKILL.md) |
+| **relayer** | Pays fees (and can front rent) for registered program instructions · Cloudflare Worker | — (off-chain) | — | design rules: [relayer `skills/gasless-relayer-integration/SKILL.md`](https://github.com/onchain-gaming-hub/relayer/blob/main/skills/gasless-relayer-integration/SKILL.md) · deployed values + onboarding: [relayer `SKILL.md`](https://github.com/onchain-gaming-hub/relayer/blob/main/SKILL.md) |
+| **hub-bridge** | Lets a game on **any origin** run inside the hub's iframe and use the player's wallet over `postMessage` | — (TS SDK) | — | ⏳ **not published yet** — currently specified inside `onchain-gaming-hub/hub-web` (`packages/hub-bridge`); planned to move to its own public repo (§2 step 8) |
 
 The four program IDs above were checked on devnet on 2026-10-11 (executable, owned by the upgradeable BPF loader). To check them yourself:
 
@@ -60,7 +60,7 @@ Each step depends on the one before it.
 5. **rewards-pool:** CPI `open_pool*` at match start and `settle` at match end; players, boosters and cranks do the rest (rewards-pool §0, §4). Token prizes need the mint on the platform-core allowlist.
 6. **ad-pool (optional):** the owner calls `init_ad_config` once to define slots; your frontend renders ads by reading accounts (ad-pool §4, §7).
 7. **relayer:** send your program ID, the instructions to sponsor and their account layout (relayer integration §5). A hub admin registers the program in the hub's single relayer project (created when hub-web deploys); the relayer pins your program's deploy slot, so **every upgrade pauses sponsorship until it is reviewed again**.
-8. **Embed in the hub (hub-bridge).** Your game page runs in the hub's iframe from its own origin and asks the hub to sign through `postMessage`. ⏳ The hub-bridge SDK and its guide are not published yet (planned repo: `solana-games-hub/hub-bridge`). Until then, a game can be played standalone with its own wallet connection.
+8. **Embed in the hub (hub-bridge).** Your game page runs in the hub's iframe from its own origin and asks the hub to sign through `postMessage`. ⏳ The hub-bridge SDK and its guide are not published yet (planned repo: `onchain-gaming-hub/hub-bridge`). Until then, a game can be played standalone with its own wallet connection.
 
 ## 3. Rules every program in the hub follows
 
@@ -103,4 +103,4 @@ These hold across all components. Component guides add their own rules on top.
 
 ## 7. Questions and mismatches
 
-Open an issue in the repository of the component concerned. For anything about this map, the Game Registry, roles, fees or the Treasury, open it in `solana-games-hub/platform-core`.
+Open an issue in the repository of the component concerned. For anything about this map, the Game Registry, roles, fees or the Treasury, open it in `onchain-gaming-hub/platform-core`.
