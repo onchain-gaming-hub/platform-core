@@ -1,7 +1,7 @@
 [package]
 name = "mock_consumer"
 version = "0.0.0"
-description = "TEST ONLY — never deploy. Proves specs/designs/03 consumer snippets compile and work against platform-core via declare_program!."
+description = "TEST ONLY — never deploy. Proves the consumer snippets in skills/platform-core-integration/SKILL.md compile and work against platform-core via declare_program!."
 edition.workspace = true
 rust-version.workspace = true
 publish = false

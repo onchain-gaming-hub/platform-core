@@ -1,4 +1,4 @@
-//! Account layouts — the contract every consumer depends on (specs/designs/01).
+//! Account layouts — the contract every consumer depends on (docs/account-layout.md).
 //!
 //! Rules for every account:
 //! - byte 8 = `version`, byte 9 = `bump` (right after the 8-byte discriminator)

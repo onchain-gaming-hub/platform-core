@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 /// ⚠️ Variant order = error code (6000 + index). Consumers / FE may match on the
-/// number → append only, never reorder (specs/designs/02 §4).
+/// number → append only, never reorder.
 #[error_code]
 pub enum PlatformError {
     #[msg("Signer does not hold the required role")]

@@ -207,7 +207,7 @@ fn update_rejects_other_platform_accounts() {
 
 #[test]
 fn pausable_mint_is_allowed_q8() {
-    // maintainer 2026-10-09: Pausable behaves like a freeze authority (can stop, cannot steal).
+    // Decision 2026-10-09: Pausable behaves like a freeze authority (can stop, cannot steal).
     let mut env = setup();
     let admin = init_default(&mut env);
     for decimals in [6u8, 0u8] {

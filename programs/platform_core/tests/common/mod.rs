@@ -361,7 +361,7 @@ pub enum TestExt {
     MintCloseAuthority,
     /// Extension present but no authority → mint can never be closed (allowed).
     MintCloseAuthorityNone,
-    /// Q8 (maintainer 2026-10-09): accepted, like a freeze authority.
+    /// Q8 (decision 2026-10-09): accepted, like a freeze authority.
     Pausable,
 }
 

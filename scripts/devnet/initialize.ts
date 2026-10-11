@@ -87,7 +87,7 @@ if (await conn.getAccountInfo(config)) {
   console.log("✅ emit! event present and decodes correctly");
 }
 
-// --- account verification (offsets from specs/designs/01) -------------------------
+// --- account verification (offsets from docs/account-layout.md) -------------------------
 const disc = (name: string) => Buffer.from(idl.accounts.find((a: any) => a.name === name).discriminator);
 const cfg = (await conn.getAccountInfo(config))!;
 const c = cfg.data;

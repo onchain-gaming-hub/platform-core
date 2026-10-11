@@ -1,5 +1,5 @@
 //! Golden layout tests — every size, offset, discriminator and enum byte must match
-//! specs/designs/01-account-layout-v1.md. If one of these fails, a consumer
+//! docs/account-layout.md. If one of these fails, a consumer
 //! (rewards-pool, ad-pool, lobby, relayer memcmp) would read the account wrong.
 
 use {

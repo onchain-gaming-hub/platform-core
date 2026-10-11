@@ -1,4 +1,4 @@
-//! Events (specs/designs/02 §3). Emitted with `emit!` (Q7) — logs can be truncated,
+//! Events. Emitted with `emit!` (Q7) — logs can be truncated,
 //! so consumers treat an event as a "refresh" signal; the account is the truth.
 
 use anchor_lang::prelude::*;

@@ -17,8 +17,7 @@ The shared Solana program (Anchor 1.2.1) of **blockchain-games-hub**: everything
 | Program ID (devnet) | `AJnPSYsn7J2muHfKztRtpZz5kBP94dWkNZLr9aMhu18G` (deploy slot 509128032) |
 | IDL | [`idls/platform_core.json`](idls/platform_core.json), version **0.1.0** |
 | Cluster | **devnet only** |
-| Design | [`specs/designs/`](specs/designs/) (account layout · instructions · consumer integration) · spec [`specs/spec-v1.md`](specs/spec-v1.md) |
-| Deploy | [`specs/deploy/devnet-runbook.md`](specs/deploy/devnet-runbook.md) |
+| Account layout | [`docs/account-layout.md`](docs/account-layout.md) (byte offsets, sizes, seeds, rent) |
 
 > ⚠️ **Not sponsored by the gasless relayer.** Every platform-core instruction is signed by an operator (Admin / role holder / moderator Worker) or a game owner from a wallet with SOL. Social login is for players only.
 

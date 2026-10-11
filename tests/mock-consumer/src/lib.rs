@@ -1,8 +1,8 @@
 //! TEST ONLY — never deploy.
 //!
 //! A stand-in for rewards-pool / ad-pool / lobby / a game program. Every account check
-//! below is copied from specs/designs/03-consumer-integration-v1.md §2 so the snippets
-//! we hand to other oracles are proven to compile and behave as documented.
+//! below is copied from skills/platform-core-integration/SKILL.md §2 so the snippets
+//! we publish to consumers are proven to compile and behave as documented.
 //! It reads platform-core ONLY through `declare_program!` + `idls/platform_core.json`
 //! (no crate dependency), exactly like a real consumer.
 #![allow(unexpected_cfgs)]

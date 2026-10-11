@@ -1,4 +1,4 @@
-//! Phase 1 — initialize · grant/revoke/renounce role · set_fee (specs/designs/02 §5).
+//! Phase 1 — initialize · grant/revoke/renounce role · set_fee.
 mod common;
 
 use {

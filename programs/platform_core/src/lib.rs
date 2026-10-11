@@ -1,8 +1,8 @@
 //! platform-core — shared program of blockchain-games-hub.
-//! Design: specs/designs/ (01 layout · 02 instructions · 03 consumer integration).
+//! Docs: SKILL.md · docs/account-layout.md · skills/platform-core-integration/SKILL.md.
 //!
 //! Phases 0–3 complete: layouts · RBAC · fee · game registry · boost allowlist ·
-//! treasury · default ads (specs/designs/04-implementation-plan.md).
+//! treasury · default ads.
 
 pub mod constants;
 pub mod error;

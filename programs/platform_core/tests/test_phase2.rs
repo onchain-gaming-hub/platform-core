@@ -1,4 +1,4 @@
-//! Phase 2 — game registry · boost mint allowlist · treasury withdraw (specs/designs/02 §5).
+//! Phase 2 — game registry · boost mint allowlist · treasury withdraw.
 mod common;
 
 use {
@@ -696,7 +696,7 @@ fn disallow_mint_rejects_other_account_types() {
     assert!(!is_closed(&env.svm, &allowed_mint_pda(&mint)));
 }
 
-// ============================================== pure 1/1 NFT (maintainer 2026-10-09)
+// ============================================== pure 1/1 NFT (decision 2026-10-09)
 
 /// decimals 0 mint with `supply` minted to `admin`, optionally without mint authority.
 fn nft_like(
@@ -746,7 +746,7 @@ fn nft_like_mints_that_can_still_pay_fees_keep_the_treasury_ata() {
     for tp in [TOKEN_PROGRAM, TOKEN_2022_PROGRAM] {
         // 1/1 but mint authority still set → supply can grow later → may owe fees.
         let open_edition = nft_like(&mut env, &admin, &tp, 1, false);
-        // decimals 0, supply > 1 (≈ ERC-1155) → divisible, pays fees (maintainer 2026-10-09).
+        // decimals 0, supply > 1 (≈ ERC-1155) → divisible, pays fees (decision 2026-10-09).
         let semi_fungible = nft_like(&mut env, &admin, &tp, 5, true);
         for mint in [open_edition, semi_fungible] {
             allow(&mut env, &admin, Role::Admin, &mint, &tp);

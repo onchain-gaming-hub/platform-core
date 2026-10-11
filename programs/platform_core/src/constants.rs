@@ -1,5 +1,5 @@
 //! Seeds and limits shared with every consumer program.
-//! ⚠️ Interface — never change a seed value after deploy (specs/designs/01 §9).
+//! ⚠️ Interface — never change a seed value after deploy (docs/account-layout.md §9).
 
 use anchor_lang::prelude::*;
 

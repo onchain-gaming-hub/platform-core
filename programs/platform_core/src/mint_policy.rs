@@ -2,7 +2,7 @@
 //!
 //! SPL Token mints have no extensions → always fine. Token-2022 mints are fine unless
 //! they carry an extension that can take, tax, block or hook transfers of the
-//! platform's funds. Applies to every mint, NFTs included (maintainer 2026-10-08).
+//! platform's funds. Applies to every mint, NFTs included (decision 2026-10-08).
 //!
 //! The check runs once, at `allow_mint`, so it must also rule out anything that lets
 //! the mint change shape later (a closable mint can be re-created with new extensions).

@@ -311,7 +311,7 @@ Errors **your** program raises while checking platform-core accounts are Anchor'
 - Every account starts with the 8-byte discriminator, then `version: u8` (= 1) and `bump: u8`, and ends with reserved bytes. Fields are never reordered and seeds never change; new fields consume reserved bytes.
 - `GameEntry` byte offsets (stable): `status` 10 · `game_program` 11 · `owner` 43 · `game_authority` 75 · `game_authority_bump` 107 · `registered_by` 108 · `registered_at` 140 · `updated_at` 148 · reserved 156–219.
 - `PlatformConfig` offsets: `boost_fee_bps` 10 · `ad_fee_bps` 12 · `admin_count` 14 · `treasury_bump` 16.
-- Full layout of every account: [`specs/designs/01-account-layout-v1.md`](../../specs/designs/01-account-layout-v1.md). Interface changes ship as a new IDL version and are announced before deploy.
+- Full layout of every account: [`docs/account-layout.md`](../../docs/account-layout.md). Interface changes ship as a new IDL version and are announced before deploy.
 
 ## 10. Checklist
 

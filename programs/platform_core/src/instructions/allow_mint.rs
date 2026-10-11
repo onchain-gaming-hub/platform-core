@@ -16,7 +16,7 @@ use crate::{
 
 /// AllowlistManager | Admin allows a mint for boost (02 §2.5 · Q4 · Q5) and makes sure
 /// the Treasury's ATA for it exists (X3), so consumers never `init_if_needed` it —
-/// except for a pure 1/1 NFT, which never pays a platform fee (R14 · maintainer 2026-10-09).
+/// except for a pure 1/1 NFT, which never pays a platform fee (R14 · decision 2026-10-09).
 /// The ATA is created with `create_idempotent`: anyone can pre-create a Treasury ATA,
 /// and a plain `init` would then fail (DoS). Its rent is never refunded (R4).
 #[derive(Accounts)]
