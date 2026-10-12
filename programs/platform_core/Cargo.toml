@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "platform-core — shared RBAC, game registry, fee config, treasury, boost allowlist and default ads for blockchain-games-hub"
 edition.workspace = true
 rust-version.workspace = true
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "lib"]
